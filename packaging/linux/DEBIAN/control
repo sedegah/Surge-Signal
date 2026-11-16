@@ -1,0 +1,13 @@
+Package: surge-signal
+Version: 1.0.0
+Section: net
+Priority: optional
+Architecture: amd64
+Maintainer: SURGE Signal
+Installed-Size: 0
+Depends: libc6, libdbus-1-3, libgl1, libegl1, libxkbcommon0, libxcb-cursor0, network-manager
+Recommends: aircrack-ng, iw, wireless-tools, tshark
+Description: Authorised Wi-Fi security assessment workspace
+ SURGE Signal provides passive wireless discovery, security inspection,
+ hardware diagnostics, capture import and analysis, controlled offline
+ password auditing, and evidence-led PDF/HTML/JSON reporting.

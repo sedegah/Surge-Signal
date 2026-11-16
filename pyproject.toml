@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "surge-signal"
+version = "1.0.0"
+description = "Authorised Wi-Fi security assessment desktop platform"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "PySide6-Essentials==6.12.0",
+    "reportlab>=4.2,<6",
+    "Pillow>=10,<14",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10", "pyinstaller>=6.10,<7"]
+
+[project.scripts]
+surge-signal = "surge_signal.app:main"
+
+[tool.setuptools]
+packages = [
+    "surge_signal",
+    "surge_signal.core",
+    "surge_signal.wireless",
+    "surge_signal.audit",
+    "surge_signal.ui",
+    "surge_signal.ui.pages",
+    "surge_signal.reporting",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+filterwarnings = ["ignore::DeprecationWarning"]
+

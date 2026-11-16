@@ -1,0 +1,179 @@
+# ---------------------------------------------------------------------------
+# SURGE Signal — repository hygiene
+# Keep source, tests, docs, branding assets and packaging scripts.
+# Ignore local environments, build products, evidence, credentials and OS junk.
+# ---------------------------------------------------------------------------
+
+# Python virtual environments and caches
+.venv/
+.venv*/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+pip-wheel-metadata/
+*.egg-info/
+build/
+dist/
+dist-linux/
+
+# PyInstaller / installer build products
+installer-output/
+installer/
+dist/
+build/
+*.spec.bak
+*.manifest
+
+# Local developer/build helpers
+/build.ps1
+/build-installer.ps1
+/build-linux.sh
+/*.spec
+/Surge Signal.bat
+/scripts/
+
+# Installable deliverables (never commit release binaries)
+SurgeSignal-Setup-*.exe
+SurgeSignal.exe
+surge-signal_*.deb
+surge-signal-*.rpm
+SURGE-Signal-*.AppImage
+surge-signal-*-linux-*.tar.gz
+surge-signal-*-linux-*.zip
+*.msi
+*.msix
+*.msixbundle
+*.appx
+*.appxbundle
+*.snap
+*.flatpak
+*.pkg
+*.dmg
+*.iso
+*.tar.gz
+*.tgz
+*.zip
+*.7z
+
+# Native build products
+*.exe
+*.msi
+*.msix
+*.deb
+*.rpm
+*.AppImage
+*.dmg
+*.iso
+*.dll
+*.so
+*.so.*
+*.dylib
+*.pyd
+*.pdb
+*.ilk
+*.obj
+*.o
+*.a
+*.lib
+
+# Application data, evidence and capture material
+# This is confidential assessment data and must never be pushed.
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.db-wal
+*.db-shm
+*.log
+logs/
+captures/
+reports/
+evidence/
+exchange/
+"Surge Signal Captures"/
+wordlists/
+*.pcap
+*.pcapng
+*.cap
+*.cap.gz
+*.kismet
+*.kismet.netxml
+*.csv
+*.pdf
+*.docx
+*.xlsx
+*.pptx
+
+# Secrets, keys, tokens and cloud credentials
+.env
+.env.*
+*.env
+*.key
+*.pem
+*.crt
+*.cer
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.kdbx
+id_rsa*
+id_ed25519*
+id_ecdsa*
+*.token
+*.secret
+*.passwd
+*.htpasswd
+.netrc
+.ssh/
+.aws/
+.azure/
+.gcloud/
+credentials*.json
+client_secret*.json
+service-account*.json
+firebase-adminsdk*.json
+
+# Generated PowerShell activation scripts from virtual environments
+**/Activate.ps1
+**/activate.ps1
+# Project build scripts build.ps1 / build-installer.ps1 are intentionally tracked.
+
+# Local overrides and temporary files
+*.local
+*.local.*
+*.bak
+*.old
+*.orig
+*.rej
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+Desktop.ini
+$RECYCLE.BIN/
+System Volume Information/
+*.lnk
+
+# Editors
+.vscode/
+.idea/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace

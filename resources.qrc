@@ -1,0 +1,6 @@
+﻿<RCC>
+  <qresource prefix="/assets">
+    <file>assets/chevron-down.png</file>
+  </qresource>
+</RCC>
+

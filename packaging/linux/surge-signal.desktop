@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=SURGE Signal
+GenericName=Wireless Security Assessment
+Comment=Authorised Wi-Fi discovery, security inspection and evidence-led assessment
+Exec=/opt/surge-signal/SurgeSignal
+Icon=surge-signal
+Terminal=false
+Categories=Network;Security;Utility;
+Keywords=wifi;wireless;security;audit;aircrack;
+StartupNotify=true
