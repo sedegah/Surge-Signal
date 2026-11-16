@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QPushButton,
+    QScrollArea,
     QSplitter,
     QTextBrowser,
     QVBoxLayout,
@@ -169,11 +170,17 @@ class InspectorPage(BasePage):
         self.detail_text.setStyleSheet(
             "QTextBrowser{background:transparent;border:none;color:#d8d8d8;font-size:12px;}"
         )
+        self.detail_text.setMinimumHeight(190)
         detail_layout.addWidget(self.detail_text, 1)
-        splitter.addWidget(self.detail)
+        self.detail.setMinimumHeight(480)
+        self.detail_scroll = QScrollArea()
+        self.detail_scroll.setWidgetResizable(True)
+        self.detail_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.detail_scroll.setWidget(self.detail)
+        splitter.addWidget(self.detail_scroll)
         splitter.setStretchFactor(0, 3)
-        splitter.setStretchFactor(1, 3)
-        splitter.setSizes([380, 300])
+        splitter.setStretchFactor(1, 4)
+        splitter.setSizes([340, 520])
         self.content.addWidget(splitter, 1)
 
     def refresh(self) -> None:
