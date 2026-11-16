@@ -9,6 +9,7 @@ control.
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -17,9 +18,17 @@ from pathlib import Path
 NO_WINDOW = 0x08000000 if sys.platform == "win32" else 0
 
 
+def _icacls_path() -> str:
+    system_root = Path(os.environ.get("SystemRoot", r"C:\Windows"))
+    candidate = system_root / "System32" / "icacls.exe"
+    if candidate.exists():
+        return str(candidate)
+    return shutil.which("icacls") or "icacls"
+
+
 def _run_icacls(*args: str) -> subprocess.CompletedProcess[bytes]:
     return subprocess.run(
-        ["icacls", *args],
+        [_icacls_path(), *args],
         capture_output=True,
         check=False,
         creationflags=NO_WINDOW,
@@ -35,7 +44,14 @@ def harden_data_directory(path: Path) -> tuple[bool, str]:
     files with no usable ACE, so that is deliberately avoided.
     """
     if sys.platform != "win32":
-        return False, "Windows ACL hardening is only applicable on Windows."
+        try:
+            for root, _directories, files in os.walk(path):
+                os.chmod(root, 0o700)
+                for name in files:
+                    os.chmod(Path(root) / name, 0o600)
+        except OSError as exc:
+            return False, f"POSIX permission hardening failed: {exc}"
+        return True, "Application data permissions restricted to this user."
     marker = path / ".acl-hardened-v2"
     if marker.exists():
         return True, "Application data ACL was already hardened."

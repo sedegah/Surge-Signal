@@ -8,6 +8,7 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -19,7 +20,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ...core.domain import Finding, FindingStatus, human_time
+from ...core.branding import SOURCE_LABELS
+from ...core.domain import Finding, FindingStatus, NetworkObservation, human_time
 from ..widgets import (
     KeyValueRow,
     format_number,
@@ -42,6 +44,7 @@ class InspectorPage(BasePage):
     def __init__(self, service, window):
         super().__init__(service, window)
         self._findings: list[Finding] = []
+        self._networks: list[NetworkObservation] = []
         self._selected_id: int | None = None
         self._search_timer = QTimer(self)
         self._search_timer.setSingleShot(True)
@@ -59,6 +62,11 @@ class InspectorPage(BasePage):
         self.search.setClearButtonEnabled(True)
         self.search.textChanged.connect(lambda _text: self._search_timer.start())
         toolbar.addWidget(self.search, 1)
+        self.network_filter = QComboBox()
+        self.network_filter.setMinimumWidth(250)
+        self.network_filter.addItem("All networks", "")
+        self.network_filter.currentIndexChanged.connect(lambda _index: self.refresh())
+        toolbar.addWidget(self.network_filter)
         self.severity_filter = QComboBox()
         self.severity_filter.addItem("All severities", "")
         for severity in ("critical", "high", "medium", "low", "info"):
@@ -109,6 +117,45 @@ class InspectorPage(BasePage):
         header.addWidget(self.verify_button)
         header.addWidget(self.observe_button)
         detail_layout.addLayout(header)
+
+        self.profile = QFrame()
+        self.profile.setObjectName("NetworkProfile")
+        self.profile.setStyleSheet(
+            "QFrame#NetworkProfile{background:#2b2b30;border:1px solid #47474d;}"
+        )
+        profile_layout = QVBoxLayout(self.profile)
+        profile_layout.setContentsMargins(12, 9, 12, 9)
+        profile_layout.setSpacing(4)
+        profile_header = QHBoxLayout()
+        profile_title = QLabel("Network profile")
+        profile_title.setProperty("role", "h2")
+        profile_header.addWidget(profile_title)
+        self.profile_summary = QLabel("Select a network or finding")
+        self.profile_summary.setProperty("role", "small")
+        profile_header.addWidget(self.profile_summary, 1, Qt.AlignmentFlag.AlignRight)
+        profile_layout.addLayout(profile_header)
+        profile_grid = QGridLayout()
+        profile_grid.setHorizontalSpacing(16)
+        profile_grid.setVerticalSpacing(1)
+        self.profile_rows = {
+            "ssid": KeyValueRow("Network name", "—"),
+            "bssid": KeyValueRow("Address", "—"),
+            "security": KeyValueRow("Security", "—"),
+            "signal": KeyValueRow("Signal", "—"),
+            "channel": KeyValueRow("Channel / band", "—"),
+            "standards": KeyValueRow("Standard", "—"),
+            "pmf_mps": KeyValueRow("PMF / WPS", "—"),
+            "source": KeyValueRow("Observed by", "—"),
+            "first_seen": KeyValueRow("First seen", "—"),
+            "last_seen": KeyValueRow("Last seen", "—"),
+            "findings": KeyValueRow("Findings", "—"),
+            "risk": KeyValueRow("Highest risk", "—"),
+        }
+        for index, row in enumerate(self.profile_rows.values()):
+            profile_grid.addWidget(row, index // 2, index % 2)
+        profile_layout.addLayout(profile_grid)
+        detail_layout.addWidget(self.profile)
+
         self.detail_rows = {
             "network": KeyValueRow("Affected network", "—"),
             "rule": KeyValueRow("Rule / confidence", "—"),
@@ -134,17 +181,45 @@ class InspectorPage(BasePage):
         self.run_button.setEnabled(assessment is not None)
         if not assessment:
             self._findings = []
+            self._networks = []
+            self.network_filter.blockSignals(True)
+            self.network_filter.clear()
+            self.network_filter.addItem("All networks", "")
+            self.network_filter.blockSignals(False)
             self.table.clearSpans()
             self.table.setRowCount(1)
             set_cell(self.table, 0, 0, "Create an assessment before inspecting networks.", colour="#a8a8a8")
             self.table.setSpan(0, 0, 1, 7)
             self.count_label.setText("0 findings")
+            self._clear_detail()
             return
+        self._networks = self.service.db.list_networks(assessment.id)
+        current_network = self.network_filter.currentData()
+        self.network_filter.blockSignals(True)
+        self.network_filter.clear()
+        self.network_filter.addItem("All networks", "")
+        for network in self._networks:
+            self.network_filter.addItem(
+                f"{network.display_ssid}  ·  {network.bssid}  ·  {network.security}",
+                network.id,
+            )
+        if current_network:
+            index = self.network_filter.findData(current_network)
+            if index >= 0:
+                self.network_filter.setCurrentIndex(index)
+        self.network_filter.blockSignals(False)
+        selected_network_id = self.network_filter.currentData()
         self._findings = self.service.db.list_findings(
             assessment.id,
             severity=self.severity_filter.currentData() or "",
             search=self.search.text().strip(),
         )
+        if selected_network_id:
+            self._findings = [
+                finding
+                for finding in self._findings
+                if finding.network_id == selected_network_id
+            ]
         self.table.clearSpans()
         self.table.setRowCount(0)
         for row, finding in enumerate(self._findings):
@@ -199,6 +274,7 @@ class InspectorPage(BasePage):
             return
         finding = self._findings[row]
         self._selected_id = finding.id
+        self._update_network_profile(self._network_for_finding(finding))
         self.detail_title.setText(finding.title)
         self.detail_meta.setText(
             f"{finding.severity.value.upper()}  ·  {finding.status.value.title()}  ·  "
@@ -228,11 +304,67 @@ class InspectorPage(BasePage):
             f"<p class='evidence'>{html.escape(finding.evidence)}</p>"
         )
 
+    def _network_for_finding(self, finding: Finding) -> NetworkObservation | None:
+        for network in self._networks:
+            if finding.network_id and network.id == finding.network_id:
+                return network
+            if network.bssid == finding.bssid:
+                return network
+        return None
+
+    def _selected_network(self) -> NetworkObservation | None:
+        network_id = self.network_filter.currentData()
+        if not network_id:
+            return None
+        return next((item for item in self._networks if item.id == network_id), None)
+
+    def _update_network_profile(self, network: NetworkObservation | None) -> None:
+        if network is None:
+            for row in self.profile_rows.values():
+                row.set_value("—")
+            self.profile_summary.setText("Select a network or finding")
+            return
+        signal = "—"
+        if network.signal_dbm is not None:
+            signal = f"{network.signal_dbm} dBm"
+            if network.signal_percent is not None:
+                signal += f" ({network.signal_percent}%)"
+        related = [finding for finding in self._findings if finding.bssid == network.bssid]
+        highest = "None"
+        if related:
+            order = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
+            highest = min(
+                related, key=lambda item: order.get(item.severity.value, 9)
+            ).severity.value.upper()
+        values = {
+            "ssid": network.display_ssid,
+            "bssid": network.bssid,
+            "security": network.security,
+            "signal": signal,
+            "channel": f"Channel {network.channel or '—'}  ·  {network.band}",
+            "standards": network.standards or "Not advertised",
+            "pmf_mps": f"PMF: {network.pmf}  ·  WPS: {network.wps}",
+            "source": SOURCE_LABELS.get(network.source, network.source),
+            "first_seen": human_time(network.first_seen),
+            "last_seen": human_time(network.last_seen),
+            "findings": format_number(len(related)),
+            "risk": highest,
+        }
+        for key, value in values.items():
+            self.profile_rows[key].set_value(value)
+        self.profile_summary.setText(
+            f"{network.display_ssid}  ·  {network.bssid}  ·  {network.security}"
+        )
+
     def _clear_detail(self) -> None:
         self._selected_id = None
-        self.detail_title.setText("Select a finding")
+        network = self._selected_network()
+        self._update_network_profile(network)
+        self.detail_title.setText("Select a finding" if network is None else "Network overview")
         self.detail_meta.setText(
             "Run an inspection, then choose a finding to read its technical rationale."
+            if network is None
+            else "Select a finding above to see its evidence and remediation."
         )
         for row in self.detail_rows.values():
             row.set_value("—")

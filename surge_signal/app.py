@@ -10,7 +10,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtGui import QIcon, QPixmap
-from PySide6.QtWidgets import QApplication, QMessageBox, QSplashScreen
+from PySide6.QtWidgets import QApplication, QDialog, QMessageBox, QSplashScreen
 
 from .core.branding import APP_NAME, APP_VERSION, BUILD_NAME, TAGLINE
 from .core.assets import icon_path, startup_banner_path
@@ -79,6 +79,11 @@ def create_application(
     logger.info("Starting %s %s (%s)", APP_NAME, APP_VERSION, BUILD_NAME)
 
     db = Database(paths.database)
+    if sys.platform != "win32":
+        try:
+            paths.database.chmod(0o600)
+        except OSError:
+            logger.warning("Database file permissions could not be restricted.")
     settings = Settings(db)
     connector = ResearchConnector(settings, paths, logger=logger)
     service = SurgeService(db, paths, settings, connector, logger=logger)
@@ -167,6 +172,16 @@ def main() -> int:
             "Check permissions on your local application data folder, then try again.",
         )
         return 1
+    if not args.smoke_test:
+        from .ui.terms import TermsDialog, terms_accepted
+
+        if not terms_accepted(_service.settings):
+            splash = getattr(window, "_splash", None)
+            if splash is not None:
+                splash.close()
+            terms = TermsDialog(_service.settings, window)
+            if terms.exec() != QDialog.DialogCode.Accepted:
+                return 0
     window.show()
     splash = getattr(window, "_splash", None)
     if splash is not None:
