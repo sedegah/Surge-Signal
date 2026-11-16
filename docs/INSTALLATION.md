@@ -29,7 +29,7 @@ and evidence. Remove it manually under your retention policy.
 ```powershell
 cd "C:\path\to\Surge Signal"
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r project\requirements.txt
 .\scripts\Surge Signal.bat
 ```
 

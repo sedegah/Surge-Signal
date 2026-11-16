@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "surge-signal"
 version = "1.0.0"
 description = "Authorised Wi-Fi security assessment desktop platform"
-readme = "README.md"
+readme = "../README.md"
 requires-python = ">=3.11"
 dependencies = [
     "PySide6-Essentials==6.12.0",
